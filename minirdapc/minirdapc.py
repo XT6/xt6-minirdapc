@@ -11,6 +11,7 @@ import requests
 import shelve
 import datetime
 import time
+import pyjq
 
 class rdap_client:
 
@@ -19,13 +20,60 @@ class rdap_client:
         self.base_url = w_base_url
         self.rdap_cache = shelve.open(w_cache_file)
         self.max_cache_time = 60
+        self.last_response = None
     # end default constructor
+
+    # destructor
+    def __del__(self):
+        self.rdap_cache.close()
+    # end
 
     # http_get
     def rdap_http_get(self, w_uri):
         r = requests.get(self.base_url + w_uri)
         return r.json()
     # end http_get
+
+    # pyjq interface
+    def _pyjq(self, w_query, w_json = None):
+
+        if w_json == None:
+            q_json = self.last_response
+        else:
+            q_json = w_json
+
+        try:
+            r = pyjq.first(w_query, q_json)
+        except:
+            raise
+        #
+        return r
+    # end pyjq
+
+    # get_poc
+    def get_poc(self, w_role, w_depth=0, w_json = None):
+        if w_json == None:
+            q_json = self.last_response
+        else:
+            q_json = w_json
+        #
+        if w_role not in ['abuse', 'technical', 'registrant']:
+            raise ValueError("Unknown POC role")
+        #
+        # jq = '.entities[] | select (.roles[0] == "{}") | .handle + " , " + .roles[0]'.format(w_role)
+        jq = '.entities[] | select (.roles[0] == "{}") | .handle'.format(w_role)
+        # print("jq string={}".format(jq))
+        r = self._pyjq(jq)
+        #
+        if w_depth == 0:
+            return r
+        elif w_depth == 1:
+            # further query rdap to get email addresses
+            r2 = self.rdap_query("entity", r)
+            email = self._pyjq('.vcardArray[1] | .[]  | select ( .[0] == "email") | .[3]', r2)
+            jr = {'handle': r, 'email': email}
+            return jr
+    # end get_poc
 
     # rdap query
     def rdap_query(self, w_type, w_query):
@@ -50,7 +98,7 @@ class rdap_client:
         except:
             r = False
             raise
-
+        self.last_response = r
         return r
     # end rdap_query
 
