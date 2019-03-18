@@ -24,3 +24,8 @@ Use as follows:
 ```
 ./minirdapc --query xxxx --type yyyy [--host rdap.lacnic.net] [--jq 'json query'] [--clean-cache]
 ```
+
+Where: 
+
+  - type: ip, autnum, entity
+  - query: string to query rdap for
