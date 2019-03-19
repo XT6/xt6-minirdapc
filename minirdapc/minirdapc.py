@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.7
 #----------------------------------------------------------------------------------
 # minirdapc
 #
@@ -12,6 +13,7 @@ import shelve
 import datetime
 import time
 import pyjq
+import json
 
 class rdap_client:
 
@@ -30,12 +32,23 @@ class rdap_client:
 
     # http_get
     def rdap_http_get(self, w_uri):
-        r = requests.get(self.base_url + w_uri)
-        return r.json()
+        try:
+            rdap_url = self.base_url + w_uri
+            print(rdap_url)
+            r = requests.get(rdap_url)
+            if r.status_code == 200:
+                return r.json()
+            else:
+                return "{'status code': '%s', 'response': %s}" % (str(r.status_code), repr(r) )
+        except:
+            raise
     # end http_get
 
     # pyjq interface
     def _pyjq(self, w_query, w_json = None):
+        """
+        Runs a jq query against a json structure
+        """
 
         if w_json == None:
             q_json = self.last_response
@@ -50,8 +63,13 @@ class rdap_client:
         return r
     # end pyjq
 
-    # get_poc
+    # get_poc ##############################################################################################
     def get_poc(self, w_role, w_depth=0, w_json = None):
+        """
+        get_poc() retrieves the handles for different roles (abuse, technical, registrant). Can be used
+        in 'simple' or 'deep' mode. In simple mode only the handle is returned, in deep mode an additional
+        RDAP query is made and detailed contact information is returned.
+        """
         if w_json == None:
             q_json = self.last_response
         else:
@@ -73,9 +91,9 @@ class rdap_client:
             email = self._pyjq('.vcardArray[1] | .[]  | select ( .[0] == "email") | .[3]', r2)
             jr = {'handle': r, 'email': email}
             return jr
-    # end get_poc
+    # end get_poc ##########################################################################################
 
-    # rdap query
+    # rdap query ###########################################################################################
     def rdap_query(self, w_type, w_query):
 
         if w_type not in ['ip', 'autnum', 'entity']:
@@ -100,12 +118,23 @@ class rdap_client:
             raise
         self.last_response = r
         return r
-    # end rdap_query
+    # end rdap query #######################################################################################
 
 # end class rdap_client
 
+# cli #######################################################################################
+@click.command()
+@click.option("--query", help="String to query RDAP for.")
+@click.option("--type", "rdap_type", help="RDAP query type, one of autnum, ip or entity")
+@click.option("--host", default="https://rdap.lacnic.net/rdap", help="RDAP server to query. Optional, defaults to LACNIC")
+def cli(query, rdap_type, host):
+        rdapc = rdap_client(host)
+        res = rdapc.rdap_query(rdap_type, query)
+        print( json.dumps(res, indent=3, sort_keys=True) )
+        # print (str(res))
+## end cli ##################################################################################
+
 if __name__ == "__main__":
-    main()
-    
+    cli()
 
 #--END-----------------------------------------------------------------------------
