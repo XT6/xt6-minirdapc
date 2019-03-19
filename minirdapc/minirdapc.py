@@ -106,6 +106,7 @@ class rdap_client:
             if cached_r['json'] == None or (cached_r['timestamp'] - time.time()) > self.max_cache_time:
                 # if not, do an http query
                 r = self.rdap_http_get(rdap_uri)
+                # TODO: No guardar en el cache cosas que no sirven!!
                 # store result in cache
                 cached_r = { 'json': r, 'timestamp': int(time.time()), 'hits': 0}
                 self.rdap_cache[rdap_uri] = cached_r
