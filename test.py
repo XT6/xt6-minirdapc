@@ -92,14 +92,19 @@ class TestRdapC(unittest.TestCase):
         poc = self.rdapc.get_poc('technical', 1)
         self.assertTrue(poc['handle'] == "AIL", msg = "poc: {}".format(poc) )
         self.assertTrue(poc['email'] == "ipadmin@lacnic.net", msg = "poc: {}".format(poc) )
+    # end
 
-        # poc = self.rdapc.get_poc('technical', 1)
-        # self.assertTrue(poc == "AIL", msg = "poc: {}".format(poc) )
+    def test_get_poc_deep2(self):
+        res = self.rdapc.rdap_query("ip", "200.7.84.0/24")
+        poc = self.rdapc.get_poc('abuse', 1)
+        self.assertTrue(poc['handle'] == "ABL2", msg = "poc: {}".format(poc) )
+        self.assertTrue(poc['email'] == "ipabuse@lacnic.net", msg = "poc: {}".format(poc) )
     # end
 
 # end class TestRdapC
 
 if __name__ == '__main__':
+    print("TESTING minirdapc - (c) carlos@xt6.us, March 2019\n")
     unittest.main()
 
 #-----------------------------------------------------------------------------
